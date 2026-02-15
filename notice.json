@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "label": "📢 公告 (26.02.15)",
+  "message": "由于susfs上游代码问题，目前开启susfs会导致出错，在上游修复前请关闭susfs编译！",
+  "color": "orange",
+  "labelColor": "black",
+  "style": "for-the-badge"
+}
