@@ -1,4 +1,7 @@
 # 安卓内核创意工坊
+
+<img alt="Endpoint Badge" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcctv18%2Fkernel-workshop%2Frefs%2Fheads%2Fmain%2Fnotice.json">
+
 - 这里是我（[@cctv18](https://github.com/cctv18)）为我的Android内核编译脚本（目前包括[6.1](https://github.com/cctv18/oppo_oplus_realme_sm8650)，[6.6](https://github.com/cctv18/oppo_oplus_realme_sm8750)，[6.12](https://github.com/cctv18/oppo_oplus_realme_sm8850)系列内核）准备的创意工坊仓库。
 ### 这里有什么内容？
 - 安卓内核自定义过程中可开启的各种功能选项介绍，第三方/移植功能代码补丁，内核编译所需的工具（某些脚本/二进制程序等），可用于自定义内核的一切资源。
