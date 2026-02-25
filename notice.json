@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "label": "📢 公告 (26.02.18)",
-  "message": "由于与simonpunk多次交涉无果，现已将susfs补丁仓库改为我自己维护的仓库，目前6.1 susfs编译已恢复正常，看到此通知后请及时同步仓库！",
+  "label": "📢 公告 (26.02.25)",
+  "message": "脚本热更新机制+内核创意工坊近期即将上线，请大家在看到公告后及时同步仓库，以便接收后续脚本更新！",
   "color": "orange",
   "labelColor": "black",
   "style": "for-the-badge"
