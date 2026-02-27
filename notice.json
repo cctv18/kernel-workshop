@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "label": "📢 公告 (26.02.25)",
-  "message": "脚本热更新机制+内核创意工坊近期即将上线，请大家在看到公告后及时同步仓库，以便接收后续脚本更新！",
+  "label": "📢 公告 (26.02.27)",
+  "message": "由于SukiSU Ultra和KSUN上游问题，目前这两个KSU分支添加susfs补丁后无法正常编译，请使用ReSukiSU或原版KSU！",
   "color": "orange",
   "labelColor": "black",
   "style": "for-the-badge"
