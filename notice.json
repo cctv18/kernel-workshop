@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "label": "📢 公告 (26.02.27)",
-  "message": "由于SukiSU Ultra和KSUN上游问题，目前这两个KSU分支添加susfs补丁后无法正常编译，请使用ReSukiSU或原版KSU！",
+  "label": "📢 公告 (26.03.13)",
+  "message": "目前欧加真6.x系列内核编译脚本已引入公共ccache机制，大幅优化首次编译速度，看到该公告请及时更新！",
   "color": "orange",
   "labelColor": "black",
   "style": "for-the-badge"
