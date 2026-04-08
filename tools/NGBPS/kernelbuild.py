@@ -493,6 +493,7 @@ def start_build(only_config=False):
         for line in lines:
             f.write(line)
             if line.strip() == "#END_OFFICIAL_MOD_DEFCONFIG":
+                f.write("\n")
                 break
     #附加defconfig_append的内容到 gki_defconfig 中
     defconfig_append = os.path.join(script_dir, "defconfig_append")
