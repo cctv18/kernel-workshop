@@ -9,6 +9,7 @@ import shutil
 from collections import deque
 import argparse
 import glob
+import urllib.request
 
 download_cache = "download_cache.json"
 def load_download_cache():
@@ -539,10 +540,19 @@ def start_build(only_config=False):
     with open(ccache_conf, "a") as f:
         f.write("sloppiness = file_stat_matches,include_file_ctime,include_file_mtime,pch_defines,file_macro,time_macros\n")
 
-    # 复制 libfakestat.so 和 libfaketimeMT.so 到 common 目录
-    lib_dir = os.path.join(script_dir, "lib")
-    shutil.copy(os.path.join(lib_dir, "libfakestat.so"), common_dir)
-    shutil.copy(os.path.join(lib_dir, "libfaketimeMT.so"), common_dir)
+    # 下载 libfakestat.so 和 libfaketimeMT.so 到 common 目录
+    # 目标文件的 GitHub Raw 下载地址
+    file_urls = {
+        "libfakestat.so": "https://github.com/cctv18/kernel-workshop/raw/refs/heads/main/lib/libfakestat.so",
+        "libfaketimeMT.so": "https://github.com/cctv18/kernel-workshop/raw/refs/heads/main/lib/libfaketimeMT.so"
+    }
+    # 从 GitHub 下载 libfakestat.so 和 libfaketimeMT.so 到 common 目录
+    for filename, url in file_urls.items():
+        dest_path = os.path.join(common_dir, filename)
+        print(f"正在下载 {filename} ...")
+        urllib.request.urlretrieve(url, dest_path)
+        print(f"{filename} 下载完成！")
+    # 遍历 common 目录，修改所有 .so 文件的权限为 777
     for so in glob.glob(os.path.join(common_dir, "*.so")):
         os.chmod(so, 0o777)
 
