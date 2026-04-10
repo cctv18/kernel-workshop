@@ -1726,10 +1726,11 @@ diff --git a/kernel/events/core.c b/kernel/events/core.c
 diff --git a/kernel/module/version.c b/kernel/module/version.c
 --- a/kernel/module/version.c
 +++ b/kernel/module/version.c
-@@ -69,7 +69,7 @@
+@@ -68,8 +68,7 @@
+ 	return 1;
  
  bad_version:
- 	pr_warn("%s: disagrees about version of symbol %s\n", info->name, symname);
+-	pr_warn("%s: disagrees about version of symbol %s\n", info->name, symname);
 -	return 0;
 +	return 1;
  }
