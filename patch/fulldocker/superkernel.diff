@@ -676,7 +676,40 @@ diff --git a/include/net/netfilter/nf_tables.h b/include/net/netfilter/nf_tables
 diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
 --- a/include/net/netns/ipv4.h
 +++ b/include/net/netns/ipv4.h
-@@ -143,18 +143,12 @@
+@@ -80,7 +80,10 @@
+ 	int sysctl_tcp_reordering;
+ 	int sysctl_tcp_rmem[3];
+ 	__cacheline_group_end(netns_ipv4_read_rx);
+-
++	#ifdef CONFIG_IP_ROUTE_MULTIPATH //using 12byte hole
++	struct sysctl_fib_multipath_hash_seed sysctl_fib_multipath_hash_seed; //64bit 8bytes
++	u32 sysctl_fib_multipath_hash_fields;//4b
++	#endif
+ 	struct inet_timewait_death_row tcp_death_row;
+ 	struct udp_table *udp_table;
+ 
+@@ -105,9 +108,6 @@
+ 	bool			fib_has_custom_local_routes;
+ 	bool			fib_offload_disabled;
+ 	u8			sysctl_tcp_shrink_window;
+-#ifdef CONFIG_IP_ROUTE_CLASSID
+-	atomic_t		fib_num_tclassid_users;
+-#endif
+ 	struct hlist_head	*fib_table_hash;
+ 	struct sock		*fibnl;
+ 
+@@ -121,6 +121,10 @@
+ 	u8 sysctl_icmp_echo_ignore_broadcasts;
+ 	u8 sysctl_icmp_ignore_bogus_error_responses;
+ 	u8 sysctl_icmp_errors_use_inbound_ifaddr;
++	#ifdef CONFIG_IP_ROUTE_MULTIPATH
++	u8 sysctl_fib_multipath_use_neigh;//1
++	u8 sysctl_fib_multipath_hash_policy;//1b
++	#endif
+ 	int sysctl_icmp_ratelimit;
+ 	int sysctl_icmp_ratemask;
+ 	int sysctl_icmp_msgs_per_sec;
+@@ -143,18 +147,12 @@
  	u8 sysctl_ip_autobind_reuse;
  	/* Shall we try to damage output packets if routing dev changes? */
  	u8 sysctl_ip_dynaddr;
@@ -695,7 +728,7 @@ diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
  	u8 sysctl_tcp_mtu_probing;
  	int sysctl_tcp_mtu_probe_floor;
  	int sysctl_tcp_base_mss;
-@@ -227,11 +221,6 @@
+@@ -227,11 +225,6 @@
  
  	u8 sysctl_fib_notify_on_flag_change;
  	u8 sysctl_tcp_syn_linear_timeouts;
@@ -707,7 +740,21 @@ diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
  	u8 sysctl_igmp_llm_reports;
  	int sysctl_igmp_max_memberships;
  	int sysctl_igmp_max_msf;
-@@ -271,7 +260,18 @@
+@@ -256,13 +249,6 @@
+ 	struct fib_rules_ops	*mr_rules_ops;
+ #endif
+ #endif
+-#ifdef CONFIG_IP_ROUTE_MULTIPATH
+-	struct sysctl_fib_multipath_hash_seed sysctl_fib_multipath_hash_seed;
+-	u32 sysctl_fib_multipath_hash_fields;
+-	u8 sysctl_fib_multipath_use_neigh;
+-	u8 sysctl_fib_multipath_hash_policy;
+-#endif
+-
+ 	struct fib_notifier_ops	*notifier_ops;
+ 	unsigned int	fib_seq;	/* protected by rtnl_mutex */
+ 
+@@ -271,7 +257,21 @@
  
  	atomic_t	rt_genid;
  	siphash_key_t	ip_id_key;
@@ -719,6 +766,9 @@ diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
 +			ANDROID_KABI_RESERVE(1);
 +		};
 +		struct{
++#ifdef CONFIG_IP_ROUTE_CLASSID
++	atomic_t		fib_num_tclassid_users;
++#endif
 +#ifdef CONFIG_NET_L3_MASTER_DEV
 +	u8 sysctl_raw_l3mdev_accept;
 +	u8 sysctl_tcp_l3mdev_accept;
