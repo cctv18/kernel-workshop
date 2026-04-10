@@ -21,6 +21,7 @@ import json
 import hashlib
 import subprocess
 import logging
+import sqlite3
 from pathlib import Path
 
 # ================= 配置区 =================
@@ -28,13 +29,26 @@ from pathlib import Path
 CCACHE_DIR = os.environ.get("CCACHE_DIR", os.path.expanduser("~/.ccache"))
 ECS_DIR = Path(CCACHE_DIR) / "ecs_cache"
 AUTOCONF_STORE_DIR = ECS_DIR / "autoconf_store"
-DEPS_DIR = ECS_DIR / "deps"
-HEADER_DIR = ECS_DIR / "headers"   # 全局头文件持久化缓存区
 SESSION_DIR = ECS_DIR / "session"  # 模拟"内存"的本次编译状态高速缓存区
 
 # 初始化目录
-for d in [AUTOCONF_STORE_DIR, DEPS_DIR, HEADER_DIR, SESSION_DIR]:
+for d in [AUTOCONF_STORE_DIR, SESSION_DIR]:
     d.mkdir(parents=True, exist_ok=True)
+
+def get_db_conn():
+    """获取 SQLite 数据库连接，并开启 WAL 高并发模式"""
+    conn = sqlite3.connect(str(ECS_DIR / "cecs_cache.db"), timeout=60.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    return conn
+
+def init_db():
+    """初始化数据库表结构"""
+    with get_db_conn() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS headers (hp_hash_key TEXT PRIMARY KEY, content_hash TEXT, configs TEXT, history TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS deps (src_md5 TEXT PRIMARY KEY, src_content_hash TEXT, last_auto_hash TEXT, configs TEXT, history TEXT, headers TEXT)")
+
+init_db()
 
 # 匹配 CONFIG_ 宏的正则（快速词法扫描）
 CONFIG_REGEX = re.compile(r'\bCONFIG_[A-Za-z0-9_]+\b')
@@ -119,20 +133,26 @@ def check_header_status(hp, curr_auto_dict, curr_auto_hash):
         
     # 如果内存中没有，进行完整的哈希和 ECS 判断
     h_hash = get_file_md5(hp)
-    cache_path = HEADER_DIR / f"{hp_hash_key}.json"
     
     res = "CHANGED"
     c = {"history": {}}
-    if cache_path.exists():
-        try:
-            with open(cache_path, 'r') as f: c = json.load(f)
-        except: pass
-            
+    try:
+        with get_db_conn() as conn:
+            row = conn.execute("SELECT content_hash, configs, history FROM headers WHERE hp_hash_key=?", (hp_hash_key,)).fetchone()
+            if row:
+                c["content_hash"] = row[0]
+                c["configs"] = json.loads(row[1])
+                c["history"] = json.loads(row[2])
+    except Exception as e:
+        if logging.getLogger().handlers:
+            logging.error(json.dumps({"type": "DB_READ_ERROR", "table": "headers", "key": hp_hash_key, "error": str(e)}, ensure_ascii=False))
+                
         if c.get("content_hash") == h_hash:
             # 物理哈希未变，判断其包含的宏的 ECS 校验值
             h_ecs = compute_ecs_hash(c.get("configs", []), curr_auto_dict)
             if h_ecs in c.get("history", {}):
                 res = "UNCHANGED"
+    except: pass
                 
     if res == "CHANGED":
         # 增量存储：首次出现或发生改变，更新全局缓存
@@ -143,9 +163,13 @@ def check_header_status(hp, curr_auto_dict, curr_auto_hash):
         if "history" not in c: c["history"] = {}
         c["history"][h_ecs] = curr_auto_hash # 保留历史记录以命中多个版本
         
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with open(cache_path, 'w') as f: json.dump(c, f)
+            with get_db_conn() as conn:
+                conn.execute("INSERT OR REPLACE INTO headers (hp_hash_key, content_hash, configs, history) VALUES (?, ?, ?, ?)",
+                             (hp_hash_key, c["content_hash"], json.dumps(c["configs"]), json.dumps(c["history"])))
+        except Exception as e:
+            if logging.getLogger().handlers:
+                logging.error(json.dumps({"type": "DB_WRITE_ERROR", "table": "headers", "key": hp_hash_key, "error": str(e)}, ensure_ascii=False))
         except: pass
         
     # 写入“内存”会话状态
@@ -257,7 +281,6 @@ def main():
 
     src_abs_path = os.path.abspath(src_file)
     src_md5 = hashlib.md5(src_abs_path.encode('utf-8')).hexdigest()
-    deps_json_path = DEPS_DIR / f"{src_md5}.json"
     
     # 计算当前 C 源码的真实文件内容 Hash
     src_content_hash = get_file_md5(src_abs_path)
@@ -280,16 +303,24 @@ def main():
     src_changed_flag = False
     changed_headers = []  # 记录因为实质变化而导致重编的头文件
     
-    if deps_json_path.exists():
-        try:
-            with open(deps_json_path, 'r') as f:
-                deps_info = json.load(f)
-            # 防范源码篡改，如果源码内容变化且/旧缓存中没有 headers 记录，立刻作废过期依赖，强制进入 LEARNING
-            if deps_info.get("src_content_hash") != src_content_hash or "headers" not in deps_info:
+    try:
+        with get_db_conn() as conn:
+            row = conn.execute("SELECT src_content_hash, last_auto_hash, configs, history, headers FROM deps WHERE src_md5=?", (src_md5,)).fetchone()
+            if row:
+                deps_info = {
+                    "src_content_hash": row[0],
+                    "last_auto_hash": row[1],
+                    "configs": json.loads(row[2]),
+                    "history": json.loads(row[3]),
+                    "headers": json.loads(row[4])
+                }
+            # 强制旧版兼容：如果源码本身改了，或缺失头文件清单数据，立刻作废
+            if deps_info and (deps_info.get("src_content_hash") != src_content_hash or "headers" not in deps_info):
                 deps_info = None
                 src_changed_flag = True
-        except:
-            pass
+    except Exception as e:
+        logging.error(json.dumps({"type": "DB_READ_ERROR", "table": "deps", "key": src_md5, "error": str(e)}, ensure_ascii=False))
+    except: pass
 
     action_taken = "UNKNOWN"
     run_with_args = orig_args.copy()
@@ -387,8 +418,14 @@ def main():
                 "headers": d_headers  # 持久化头文件清单供下次校验
             }
             
-            with open(deps_json_path, 'w') as f:
-                json.dump(new_deps_info, f)
+            try:
+                with get_db_conn() as conn:
+                    conn.execute("INSERT OR REPLACE INTO deps (src_md5, src_content_hash, last_auto_hash, configs, history, headers) VALUES (?, ?, ?, ?, ?, ?)",
+                                 (src_md5, new_deps_info["src_content_hash"], new_deps_info["last_auto_hash"], 
+                                  json.dumps(new_deps_info["configs"]), json.dumps(new_deps_info["history"]), json.dumps(new_deps_info["headers"])))
+            except Exception as e:
+                logging.error(json.dumps({"type": "DB_WRITE_ERROR", "table": "deps", "key": src_md5, "error": str(e)}, ensure_ascii=False))
+            except: pass
 
     # 增强全面的日志输出，满足详细追踪要求
     log_info = {
