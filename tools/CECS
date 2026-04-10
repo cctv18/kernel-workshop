@@ -29,12 +29,11 @@ CCACHE_DIR = os.environ.get("CCACHE_DIR", os.path.expanduser("~/.ccache"))
 ECS_DIR = Path(CCACHE_DIR) / "ecs_cache"
 AUTOCONF_STORE_DIR = ECS_DIR / "autoconf_store"
 DEPS_DIR = ECS_DIR / "deps"
-
-# 移除全局静态的 LOG_FILE 和 logging.basicConfig 配置。
-# 现将其推迟到动态识别出内核编译输出目录（如 out/）之后，再行配置，以满足日志存放在源码编译输出目录的需求。
+HEADER_DIR = ECS_DIR / "headers"   # 全局头文件持久化缓存区
+SESSION_DIR = ECS_DIR / "session"  # 模拟"内存"的本次编译状态高速缓存区
 
 # 初始化目录
-for d in [AUTOCONF_STORE_DIR, DEPS_DIR]:
+for d in [AUTOCONF_STORE_DIR, DEPS_DIR, HEADER_DIR, SESSION_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # 匹配 CONFIG_ 宏的正则（快速词法扫描）
@@ -102,6 +101,60 @@ def parse_d_file(d_filepath):
             if token != ':' and os.path.exists(token):
                 deps.append(token)
     return deps
+
+# 跨进程全局头文件校验与“内存”会话缓存引擎：
+# 实现头文件哈希校验、ECS宏提取校验与高速内存状态文件的共享机制
+def check_header_status(hp, curr_auto_dict, curr_auto_hash):
+    """检测特定头文件是否发生物理改变或ECS宏改变，并利用高速状态文件模拟内存共享"""
+    if not os.path.exists(hp): 
+        return "CHANGED"
+        
+    hp_hash_key = hashlib.md5(hp.encode('utf-8')).hexdigest()
+    # 模拟内存：读取同一次 autoconf 下的高速状态缓存（微秒级）
+    session_marker = SESSION_DIR / curr_auto_hash / f"{hp_hash_key}.status"
+    if session_marker.exists():
+        try:
+            with open(session_marker, 'r') as f: return f.read().strip()
+        except: pass
+        
+    # 如果内存中没有，进行完整的哈希和 ECS 判断
+    h_hash = get_file_md5(hp)
+    cache_path = HEADER_DIR / f"{hp_hash_key}.json"
+    
+    res = "CHANGED"
+    c = {"history": {}}
+    if cache_path.exists():
+        try:
+            with open(cache_path, 'r') as f: c = json.load(f)
+        except: pass
+            
+        if c.get("content_hash") == h_hash:
+            # 物理哈希未变，判断其包含的宏的 ECS 校验值
+            h_ecs = compute_ecs_hash(c.get("configs", []), curr_auto_dict)
+            if h_ecs in c.get("history", {}):
+                res = "UNCHANGED"
+                
+    if res == "CHANGED":
+        # 增量存储：首次出现或发生改变，更新全局缓存
+        macros = extract_configs_from_files([hp])
+        h_ecs = compute_ecs_hash(macros, curr_auto_dict)
+        c["content_hash"] = h_hash
+        c["configs"] = macros
+        if "history" not in c: c["history"] = {}
+        c["history"][h_ecs] = curr_auto_hash # 保留历史记录以命中多个版本
+        
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(cache_path, 'w') as f: json.dump(c, f)
+        except: pass
+        
+    # 写入“内存”会话状态
+    session_marker.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with open(session_marker, 'w') as f: f.write(res)
+    except: pass
+    
+    return res
 
 def main():
     # 统计汇总模式
@@ -225,12 +278,14 @@ def main():
     # 3. 读取该文件的历史依赖记录
     deps_info = None
     src_changed_flag = False
+    changed_headers = []  # 记录因为实质变化而导致重编的头文件
+    
     if deps_json_path.exists():
         try:
             with open(deps_json_path, 'r') as f:
                 deps_info = json.load(f)
-            # 防范源码篡改，如果源码内容变化，立刻作废过期依赖，强制进入 LEARNING
-            if deps_info.get("src_content_hash") != src_content_hash:
+            # 防范源码篡改，如果源码内容变化且/旧缓存中没有 headers 记录，立刻作废过期依赖，强制进入 LEARNING
+            if deps_info.get("src_content_hash") != src_content_hash or "headers" not in deps_info:
                 deps_info = None
                 src_changed_flag = True
         except:
@@ -242,54 +297,54 @@ def main():
 
     # 4. 核心判定逻辑
     changed_macros = []  # 配置变化追踪列表，用于记录导致 Miss 的 CONFIG 宏
-    if deps_info and deps_info.get("last_auto_hash") == current_auto_hash:
-        # 【情况 A：直接命中（Fast Path）】
-        # autoconf.h 从上次编译该文件到现在完全没有变化
-        action_taken = "FAST_PATH_UNCHANGED"
-        # 维持原样，全部操作交给 ccache
-    
-    elif deps_info and deps_info.get("last_auto_hash") != current_auto_hash:
-        auto_changed_flag = True
-        # 【情况 B：内核配置发生变化，需进行 ECS 校验】
+    if deps_info:
         curr_dict = parse_autoconf(autoconf_path)
         new_ecs_hash = compute_ecs_hash(deps_info["configs"], curr_dict)
+        if deps_info.get("last_auto_hash") != current_auto_hash:
+            auto_changed_flag = True
 
-        # 引入 History Map 判定逻辑
-        history_map = deps_info.get("history", {})
-        
-        # 在 History Map 中寻找当前 ECS Hash 对应的历史 autoconf_hash
-        if new_ecs_hash in history_map:
-            anchor_auto_hash = history_map[new_ecs_hash]
-            
-            # 使用虚拟目录劫持 -I，即使对应不同版本也能精确指定路径
-            anchor_inc_dir = AUTOCONF_STORE_DIR / anchor_auto_hash
-            anchor_auto_path = anchor_inc_dir / "generated" / "autoconf.h"
-            
-            if anchor_auto_path.exists():
-                # 【情况 B-1：ECS 校验匹配历史状态，成功命中】
-                action_taken = "ECS_HIT_TRICK"
-                # 核心黑科技：通过向参数最前列追加 -I，将编译器的头文件搜索重定向到目标历史缓存
-                # insert(1, ...)：确保 -I 插入在编译器名称(如 clang)之后
-                run_with_args.insert(1, str(anchor_inc_dir))
-                run_with_args.insert(1, "-I")
-                # 注意：这里不更新 deps.json，让它继续锚定旧版 autoconf，确保后续编译继续 Trick 命中
-            else:
-                action_taken = "ECS_MISS_OLD_AUTOCONF_LOST"
+        # 精准判断每一个引用过的头文件状态
+        headers_changed = False
+        for hp in deps_info.get("headers", []):
+            if check_header_status(hp, curr_dict, current_auto_hash) == "CHANGED":
+                headers_changed = True
+                changed_headers.append(hp)
+
+        if headers_changed:
+            action_taken = "ECS_MISS_HEADER_CHANGED"
         else:
-            # 【情况 B-2：ECS 校验未通过，这是一个全新的配置状态组合/源码受到配置变化影响，无法命中】
-            action_taken = "ECS_MISS_AFFECTED"
-            
-            # 追溯并提取究竟是 used_configs 中的哪个宏发生了实质性变化
-            try:
-                old_auto_hash = deps_info.get("last_auto_hash")
-                old_auto_path = AUTOCONF_STORE_DIR / old_auto_hash / "generated" / "autoconf.h"
-                if old_auto_path.exists():
-                    old_dict = parse_autoconf(old_auto_path)
-                    for cfg in deps_info["configs"]:
-                        if old_dict.get(cfg, "UNDEFINED") != curr_dict.get(cfg, "UNDEFINED"):
-                            changed_macros.append(cfg)
-            except:
-                pass
+            history_map = deps_info.get("history", {})
+            if new_ecs_hash in history_map:
+                anchor_auto_hash = history_map[new_ecs_hash]
+                if anchor_auto_hash == current_auto_hash:
+                    # 【情况 A：直接命中（Fast Path）】
+                    action_taken = "FAST_PATH_UNCHANGED"
+                else:
+                    anchor_inc_dir = AUTOCONF_STORE_DIR / anchor_auto_hash
+                    anchor_auto_path = anchor_inc_dir / "generated" / "autoconf.h"
+                    
+                    if anchor_auto_path.exists():
+                        # 【情况 B-1：ECS 校验匹配历史状态，成功命中】
+                        action_taken = "ECS_HIT_TRICK"
+                        run_with_args.insert(1, str(anchor_inc_dir))
+                        run_with_args.insert(1, "-I")
+                    else:
+                        action_taken = "ECS_MISS_OLD_AUTOCONF_LOST"
+            else:
+                # 【情况 B-2：ECS 校验未通过，这是一个全新的配置状态组合/源码受到配置变化影响】
+                action_taken = "ECS_MISS_AFFECTED"
+                
+                # 追溯并提取究竟是 used_configs 中的哪个宏发生了实质性变化
+                try:
+                    old_auto_hash = deps_info.get("last_auto_hash")
+                    old_auto_path = AUTOCONF_STORE_DIR / old_auto_hash / "generated" / "autoconf.h"
+                    if old_auto_path.exists():
+                        old_dict = parse_autoconf(old_auto_path)
+                        for cfg in deps_info["configs"]:
+                            if old_dict.get(cfg, "UNDEFINED") != curr_dict.get(cfg, "UNDEFINED"):
+                                changed_macros.append(cfg)
+                except:
+                    pass
     else:
         # 【情况 C：初次编译该文件，或记录丢失】
         action_taken = "LEARNING_FIRST_TIME"
@@ -299,13 +354,20 @@ def main():
 
     # 6. 后置处理：如果发生重新编译 (MISS / LEARNING)，需要提取真实依赖
     learning_occurred = False
-    if action_taken in ["ECS_MISS_AFFECTED", "ECS_MISS_OLD_AUTOCONF_LOST", "LEARNING_FIRST_TIME"]:
+    if action_taken in ["ECS_MISS_AFFECTED", "ECS_MISS_HEADER_CHANGED", "ECS_MISS_OLD_AUTOCONF_LOST", "LEARNING_FIRST_TIME"]:
         if exit_code == 0:
             learning_occurred = True
             # 尝试找到 .d 文件，找不到则退化为只扫描 .c 源文件本身
             files_to_scan = [src_file]
+            d_headers = []
             if d_file_path and os.path.exists(d_file_path):
-                files_to_scan.extend(parse_d_file(d_file_path))
+                # 排除 autoconf 后，记录源文件引用的所有头文件相对路径清单
+                d_headers = [h for h in parse_d_file(d_file_path) if not h.endswith("generated/autoconf.h")]
+                files_to_scan.extend(d_headers)
+                
+                # 主动为新发现的头文件触发并预热哈希与宏内存记录
+                for hp in d_headers:
+                    check_header_status(hp, parse_autoconf(autoconf_path), current_auto_hash)
             
             # 提取宏集合
             used_configs = extract_configs_from_files(files_to_scan)
@@ -321,7 +383,8 @@ def main():
                 "configs": used_configs,
                 "last_auto_hash": current_auto_hash,
                 "history": history_map,  # 保存并持续累积的历史记录表
-                "src_content_hash": src_content_hash  # 保存本次学习时的源码内容 Hash
+                "src_content_hash": src_content_hash,  # 保存本次学习时的源码内容 Hash
+                "headers": d_headers  # 持久化头文件清单供下次校验
             }
             
             with open(deps_json_path, 'w') as f:
@@ -337,7 +400,8 @@ def main():
         "src_deps_changed": src_changed_flag,
         "ecs_hit": action_taken in ["ECS_HIT_TRICK", "FAST_PATH_UNCHANGED"],
         "learning": learning_occurred,
-        "changed_macros": changed_macros
+        "changed_macros": changed_macros,
+        "changed_headers": changed_headers
     }
     # dump 时将 ensure_ascii 设为 False 以免内部中文等路径转换出错
     logging.info(json.dumps(log_info, ensure_ascii=False))
@@ -366,11 +430,13 @@ def print_summary():
         "FAST_PATH_UNCHANGED": 0,
         "ECS_HIT_TRICK": 0,
         "ECS_MISS_AFFECTED": 0,
+        "ECS_MISS_HEADER_CHANGED": 0,
         "LEARNING_FIRST_TIME": 0,
         "ECS_MISS_OLD_AUTOCONF_LOST": 0
     }
     
     all_changed_macros = set()  # 收集导致miss的所有 CONFIG 宏
+    all_changed_headers = set() # 统计报告收集汇总头文件
     
     print("\n" + "="*55)
     print(f" CCache ECS 编译加速统计报告 (读取自 {log_file_path})")
@@ -391,6 +457,11 @@ def print_summary():
                     macros = event.get("changed_macros", [])
                     if macros:
                         all_changed_macros.update(macros)
+                        
+                    # 提取导致 miss 的头文件列表
+                    headers = event.get("changed_headers", [])
+                    if headers:
+                        all_changed_headers.update(headers)
             except:
                 # 兼容异常或非标准格式，降级使用正则提取
                 match = re.search(r'"action": "([^"]+)"', line)
@@ -414,7 +485,7 @@ def print_summary():
             print(f"  - 成功拯救 (Trick Hit): {stats['ECS_HIT_TRICK']} (拦截成功率: {stats['ECS_HIT_TRICK']/ecs_total*100:.1f}%)")
             print(f"  - 穿透重编 (Miss): {stats['ECS_MISS_AFFECTED']} (拦截失败率: {stats['ECS_MISS_AFFECTED']/ecs_total*100:.1f}%)")
             
-        # [新增] 打印出发生实质性改变的配置选项
+        # 打印出发生实质性改变的配置选项
         if all_changed_macros:
             print(f"\n[导致 ECS Miss 的实质性变化配置项 (Changed Macros)]")
             for macro in sorted(list(all_changed_macros)):
@@ -422,6 +493,12 @@ def print_summary():
         elif stats['ECS_MISS_AFFECTED'] > 0:
             print(f"\n[导致 ECS Miss 的实质性变化配置项]")
             print("  * (日志中未记录具体宏或为源码内容篡改导致穿透)")
+
+        # 打印出导致穿透的头文件
+        if all_changed_headers:
+            print(f"\n[导致头文件穿透的被修改文件清单 (Changed Headers)]")
+            for h in sorted(list(all_changed_headers)):
+                print(f"  * {h}")
             
     print("="*55 + "\n")
 
