@@ -265,6 +265,10 @@ def main():
         except:
             pass
 
+    # 如果不是典型的内核目标编译，直接放行给 ccache 处理
+    if not src_file or not autoconf_path or not os.path.exists(autoconf_path):
+        return run_ccache(orig_args)
+
     # 日志输出路径移步至输出目录，同时配置 JSON 字典输出
     log_file_path = os.path.join(out_dir, "cecs.log")
     if not logging.getLogger().handlers:
@@ -274,10 +278,6 @@ def main():
             # 将 message 配置为直接接收 JSON 字符串
             format='{"time": "%(asctime)s", "event": %(message)s}'
         )
-
-    # 如果不是典型的内核目标编译，直接放行给 ccache 处理
-    if not src_file or not autoconf_path or not os.path.exists(autoconf_path):
-        return run_ccache(orig_args)
 
     src_abs_path = os.path.abspath(src_file)
     src_md5 = hashlib.md5(src_abs_path.encode('utf-8')).hexdigest()
@@ -328,6 +328,7 @@ def main():
 
     # 4. 核心判定逻辑
     changed_macros = []  # 配置变化追踪列表，用于记录导致 Miss 的 CONFIG 宏
+    target_auto_hash = current_auto_hash # 默认状态，使用当前的 autoconf 哈希作为注入目标
     if deps_info:
         curr_dict = parse_autoconf(autoconf_path)
         new_ecs_hash = compute_ecs_hash(deps_info["configs"], curr_dict)
@@ -357,8 +358,46 @@ def main():
                     if anchor_auto_path.exists():
                         # 【情况 B-1：ECS 校验匹配历史状态，成功命中】
                         action_taken = "ECS_HIT_TRICK"
-                        run_with_args.insert(1, str(anchor_inc_dir))
-                        run_with_args.insert(1, "-I")
+                        # 仅在使用 Clang 编译器时激活 VFS 完美劫持
+                        if "clang" in orig_args[0].lower():
+                            # 构造虚拟文件系统映射表
+                            vfs_dict = {
+                                "version": 0,
+                                "use-external-names": False, # 关键：欺骗预处理器，让输出的行标记维持原相对路径
+                                "roots": [
+                                    {"type": "directory", "name": os.path.abspath("include/generated"), "contents": [{"type": "file", "name": "autoconf.h", "external-contents": str(anchor_auto_path.absolute())}]},
+                                    {"type": "directory", "name": os.path.abspath("out/include/generated"), "contents": [{"type": "file", "name": "autoconf.h", "external-contents": str(anchor_auto_path.absolute())}]},
+                                    {"type": "directory", "name": "include/generated", "contents": [{"type": "file", "name": "autoconf.h", "external-contents": str(anchor_auto_path.absolute())}]},
+                                    {"type": "directory", "name": "out/include/generated", "contents": [{"type": "file", "name": "autoconf.h", "external-contents": str(anchor_auto_path.absolute())}]}
+                                ]
+                            }
+                            vfs_yaml_path = SESSION_DIR / f"vfs_{anchor_auto_hash}.json"
+                            if not vfs_yaml_path.exists():
+                                try:
+                                    with open(vfs_yaml_path, 'w') as f: json.dump(vfs_dict, f)
+                                except: pass
+                            
+                            # 构造底层的编译器包裹脚本
+                            compiler_basename = os.path.basename(orig_args[0])  # 提取真实编译器名称 (通常是 clang)
+                            wrapper_dir = SESSION_DIR / f"wrap_{anchor_auto_hash}"
+                            wrapper_dir.mkdir(parents=True, exist_ok=True)
+                            
+                            # 保证包装器名称与编译器原名完全一致
+                            wrapper_path = wrapper_dir / compiler_basename
+                            if not wrapper_path.exists():
+                                try:
+                                    with open(wrapper_path, 'w') as f:
+                                        f.write(f"#!/bin/bash\nexec {orig_args[0]} -ivfsoverlay {vfs_yaml_path.absolute()} \"$@\"\n")
+                                    os.chmod(wrapper_path, 0o755)
+                                except: pass
+                            
+                            # 将 wrapper 注入为底层编译器，ccache 外部命令行保持不变
+                            os.environ["CCACHE_COMPILER"] = str(wrapper_path.absolute())
+                        else:
+                            # 非 Clang 环境的普通降级注入（会导致 Direct Miss）
+                            run_with_args.insert(1, str(anchor_inc_dir))
+                            run_with_args.insert(1, "-I")
+                        target_auto_hash = anchor_auto_hash # 命中历史状态，将目标切换为历史哈希
                     else:
                         action_taken = "ECS_MISS_OLD_AUTOCONF_LOST"
             else:
@@ -381,6 +420,9 @@ def main():
         action_taken = "LEARNING_FIRST_TIME"
 
     # 5. 执行实际的编译 / ccache 调用
+    target_inc_dir = AUTOCONF_STORE_DIR / target_auto_hash
+    run_with_args.insert(1, str(target_inc_dir))
+    run_with_args.insert(1, "-I")
     exit_code = run_ccache(run_with_args)
 
     # 6. 后置处理：如果发生重新编译 (MISS / LEARNING)，需要提取真实依赖
