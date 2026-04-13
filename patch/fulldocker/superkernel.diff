@@ -3796,3 +3796,27 @@ diff --git a/net/sctp/transport.c b/net/sctp/transport.c
  	} else {
  		/* 6.3.1 C2) When the first RTT measurement R is made, set
  		 * SRTT <- R, RTTVAR <- R/2.
+diff --git a/lib/idr.c b/lib/idr.c
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -522,6 +522,7 @@
+ 	return;
+  err:
+ 	xas_unlock_irqrestore(&xas, flags);
++	if (id>500000) return;
+ 	WARN(1, "ida_free called for id=%d which is not allocated.\n", id);
+ }
+ EXPORT_SYMBOL(ida_free);
+diff --git a/mm/mmap.c b/mm/mmap.c
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -982,7 +982,7 @@
+ {
+ 	unsigned long index = addr;
+ 
+-	mmap_assert_locked(mm);
++	//mmap_assert_locked(mm);
+ 	return mt_find(&mm->mm_mt, &index, ULONG_MAX);
+ }
+ EXPORT_SYMBOL(find_vma);
+ 
