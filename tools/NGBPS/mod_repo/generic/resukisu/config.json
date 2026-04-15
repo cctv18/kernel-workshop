@@ -1,0 +1,7 @@
+{
+   "name": "kernelsu",
+   "description": "Resukisu patch",
+   "versions": ["6","5"],
+   "dependency": [],
+   "type": "manual"
+}

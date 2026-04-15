@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kaifeng Zou <winzkh@outlook.com>
+Date: Sat, 28 Mar 2026 10:24:21 +0800
+Subject: [PATCH] kernel/module: skip loading of oplus_secure_guard_new module to keep ksud compatibility
+
+To ensure that kernel root implementations such as KernelSU can load
+correctly on Oplus platforms with an unlocked bootloader, we ignore
+the loading of the oplus_secure_guard_new module.
+
+The load_module function is modified to intercept any module named
+oplus_secure_guard_new early in the loading process. When detected,
+the kernel skips the loading procedure and returns 0, effectively
+disabling the oplus_secure_guard_new module while preventing
+error escalation in user-space tools.
+
+Signed-off-by: Kaifeng Zou <winzkh@outlook.com>
+---
+ kernel/module/main.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/kernel/module/main.c b/kernel/module/main.c
+index ea1b4e1163898..6c4e0b4d3b502 100644
+--- a/kernel/module/main.c
++++ b/kernel/module/main.c
+@@ -2913,6 +2913,13 @@ static int load_module(struct load_info *info, const char __user *uargs,
+        if (err)
+                goto free_copy;
+
++       /* Skip oplus_secure_guard_new module load */
++       if (strcmp(info->name, "oplus_secure_guard_new") == 0) {
++               err = 0;
++               pr_warn("Blocking oplus_secure_guard_new module.");
++               goto free_copy;
++       }
++
+        /* Figure out module layout, and allocate all the memory. */
+        mod = layout_and_allocate(info, flags);
+        if (IS_ERR(mod)) {
+--
+2.53.0
+

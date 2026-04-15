@@ -1,0 +1,295 @@
+diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+old mode 100644
+new mode 100755
+index c24f8bc01045..f63d4014bd96
+--- a/include/linux/f2fs_fs.h
++++ b/include/linux/f2fs_fs.h
+@@ -23,6 +23,7 @@
+ #define NULL_ADDR		((block_t)0)	/* used as block_t addresses */
+ #define NEW_ADDR		((block_t)-1)	/* used as block_t addresses */
+ #define COMPRESS_ADDR		((block_t)-2)	/* used as compressed data flag */
++#define DEDUP_ADDR		((block_t)-1024)/* used as block_t addresses */
+ 
+ #define F2FS_BLKSIZE_MASK		(F2FS_BLKSIZE - 1)
+ #define F2FS_BYTES_TO_BLK(bytes)	((unsigned long long)(bytes) >> F2FS_BLKSIZE_BITS)
+@@ -328,9 +329,17 @@ struct f2fs_inode {
+ 			__u8 i_compress_algorithm;	/* compress algorithm */
+ 			__u8 i_log_cluster_size;	/* log of cluster size */
+ 			__le16 i_compress_flag;		/* compress flag */
+-						/* 0 bit: chksum flag
+-						 * [8,15] bits: compress level
+-						 */
++							/* 0 bit: chksum flag
++							 * [1,2] bits: compress layout
++							 * 3 bit: readpage updates atime
++							 * [4,7] bits: reserved
++							 * [8,15] bits: compress level
++							 */
++#ifdef CONFIG_F2FS_FS_DEDUP
++			__le32 i_inner_ino;     /* for layered inode */
++			__le32 i_dedup_flags;   /* dedup file attributes */
++			__le32 i_dedup_rsvd;    /* reserved for dedup */
++#endif
+ 			__le32 i_extra_end[0];	/* for attribute size calculation */
+ 		} __packed;
+ 		__le32 i_addr[DEF_ADDRS_PER_INODE];	/* Pointers to data blocks */
+diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+old mode 100644
+new mode 100755
+index eb3b2f1326b1..a008822a639a
+--- a/include/trace/events/f2fs.h
++++ b/include/trace/events/f2fs.h
+@@ -2404,6 +2404,123 @@ DEFINE_EVENT(f2fs__rw_end, f2fs_datawrite_end,
+ 	TP_ARGS(inode, offset, bytes)
+ );
+ 
++#ifdef CONFIG_F2FS_FS_DEDUP
++DECLARE_EVENT_CLASS(f2fs__dedup_inode,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner),
++
++	TP_STRUCT__entry(
++		__field(dev_t,  dev)
++		__field(ino_t,  ino)
++		__field(ino_t,  pino)
++		__field(loff_t, size)
++		__field(unsigned int, nlink)
++		__field(ino_t,  inner_ino)
++		__field(unsigned int, inner_nlink)
++	),
++
++	TP_fast_assign(
++		__entry->dev    = inode->i_sb->s_dev;
++		__entry->ino    = inode->i_ino;
++		__entry->pino   = F2FS_I(inode)->i_pino;
++		__entry->nlink  = inode->i_nlink;
++		__entry->size   = inode->i_size;
++		__entry->inner_ino      = inner->i_ino;
++		__entry->inner_nlink    = inner->i_nlink;
++	),
++
++	TP_printk("dev = (%d,%d), ino = %lu, pino = %lu, "
++		"i_size = %lld, i_nlink = %u, "
++		"inner = %lu, inner i_nlink = %u",
++		show_dev_ino(__entry),
++		(unsigned long)__entry->pino,
++		__entry->size,
++		(unsigned int)__entry->nlink,
++		(unsigned long)__entry->inner_ino,
++		(unsigned int)__entry->inner_nlink)
++);
++
++DEFINE_EVENT(f2fs__dedup_inode, f2fs_dedup_ioc_create_layered_inode,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner)
++);
++
++DEFINE_EVENT(f2fs__dedup_inode, f2fs_dedup_ioc_dedup_inode,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner)
++);
++
++DEFINE_EVENT(f2fs__dedup_inode, f2fs_dedup_revoke_inode,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner)
++);
++
++DEFINE_EVENT(f2fs__dedup_inode, f2fs_dedup_revoke_fail,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner)
++);
++
++DEFINE_EVENT(f2fs__dedup_inode, f2fs_dedup_dec_inner_link,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner)
++);
++
++DECLARE_EVENT_CLASS(f2fs__dedup_map,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner),
++
++	TP_STRUCT__entry(
++		__field(dev_t,  dev)
++		__field(ino_t,  ino)
++		__field(loff_t, size)
++		__field(ino_t,  inner_ino)
++		__field(unsigned int, inner_nlink)
++	),
++
++	TP_fast_assign(
++		__entry->dev    = inode->i_sb->s_dev;
++		__entry->ino    = inode->i_ino;
++		__entry->size   = inode->i_size;
++		__entry->inner_ino      = inner->i_ino;
++		__entry->inner_nlink    = inner->i_nlink;
++	),
++
++	TP_printk("dev = (%d,%d), outer ino = %lu, i_size = %lld, "
++		"map to inner ino = %lu, inner i_nlink = %u",
++		show_dev_ino(__entry),
++		__entry->size,
++		(unsigned long)__entry->inner_ino,
++		(unsigned int)__entry->inner_nlink)
++);
++
++DEFINE_EVENT(f2fs__dedup_map, f2fs_dedup_map_readpage,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner)
++);
++
++DEFINE_EVENT(f2fs__dedup_map, f2fs_dedup_map_blocks,
++
++	TP_PROTO(struct inode *inode, struct inode *inner),
++
++	TP_ARGS(inode, inner)
++);
++#endif /* CONFIG_F2FS_FS_DEDUP */
+ #endif /* _TRACE_F2FS_H */
+ 
+  /* This part must be outside protection */
+diff --git a/include/uapi/linux/f2fs.h b/include/uapi/linux/f2fs.h
+old mode 100644
+new mode 100755
+index 795e26258355..c2661fb50fe8
+--- a/include/uapi/linux/f2fs.h
++++ b/include/uapi/linux/f2fs.h
+@@ -43,8 +43,31 @@
+ #define F2FS_IOC_DECOMPRESS_FILE	_IO(F2FS_IOCTL_MAGIC, 23)
+ #define F2FS_IOC_COMPRESS_FILE		_IO(F2FS_IOCTL_MAGIC, 24)
+ #define F2FS_IOC_START_ATOMIC_REPLACE	_IO(F2FS_IOCTL_MAGIC, 25)
+-#define F2FS_IOC_GET_DEV_ALIAS_FILE	_IOR(F2FS_IOCTL_MAGIC, 26, __u32)
+-#define F2FS_IOC_IO_PRIO		_IOW(F2FS_IOCTL_MAGIC, 27, __u32)
++#define F2FS_IOC_GET_EXTRA_ATTR		_IOR(F2FS_IOCTL_MAGIC, 26,	\
++						struct f2fs_extra_attr)
++#define F2FS_IOC_SET_EXTRA_ATTR		_IOW(F2FS_IOCTL_MAGIC, 27,	\
++						struct f2fs_extra_attr)
++
++#define F2FS_DEDUP_IOC_BASE	(100)
++#define F2FS_IOC_DEDUP_CREATE		_IOW(F2FS_IOCTL_MAGIC,	\
++					F2FS_DEDUP_IOC_BASE + 0, struct f2fs_dedup_src)
++#define F2FS_IOC_DEDUP_FILE		_IOW(F2FS_IOCTL_MAGIC,	\
++					F2FS_DEDUP_IOC_BASE + 1, struct f2fs_dedup_dst)
++#define F2FS_IOC_DEDUP_REVOKE		_IOW(F2FS_IOCTL_MAGIC,	\
++					F2FS_DEDUP_IOC_BASE + 2, struct f2fs_dedup_revoke)
++#define F2FS_IOC_DEDUP_GET_FILE_INFO	_IOR(F2FS_IOCTL_MAGIC,	\
++					F2FS_DEDUP_IOC_BASE + 3, struct f2fs_dedup_file_info)
++#define F2FS_IOC_DEDUP_GET_SYS_INFO	_IOR(F2FS_IOCTL_MAGIC,	\
++					F2FS_DEDUP_IOC_BASE + 4, struct f2fs_dedup_sys_info)
++
++#define F2FS_IOC_CLONE_FILE		_IOW(F2FS_IOCTL_MAGIC,	\
++					F2FS_DEDUP_IOC_BASE + 5, struct f2fs_clone_info)
++#define F2FS_IOC_MODIFY_CHECK	_IOWR(F2FS_IOCTL_MAGIC,	\
++					F2FS_DEDUP_IOC_BASE + 6, struct f2fs_modify_check_info)
++#define F2FS_IOC_DEDUP_PERM_CHECK \
++			_IO(F2FS_IOCTL_MAGIC, F2FS_DEDUP_IOC_BASE + 7)
++#define F2FS_IOC_GET_DEV_ALIAS_FILE	_IOR(F2FS_IOCTL_MAGIC, 28, __u32)
++#define F2FS_IOC_IO_PRIO		_IOW(F2FS_IOCTL_MAGIC, 29, __u32)
+ 
+ /*
+  * should be same as XFS_IOC_GOINGDOWN.
+@@ -104,4 +127,75 @@ struct f2fs_comp_option {
+ 	__u8 log_cluster_size;
+ };
+ 
++struct f2fs_comp_option_v2 {
++	__u8 algorithm;
++	__u8 log_cluster_size;
++	__u8 level;
++	__u8 flag;
++};
++
++enum {
++	F2FS_EXTRA_ATTR_TOTAL_SIZE,		/* ro, size of extra attr area */
++	F2FS_EXTRA_ATTR_ISIZE,			/* ro, i_extra_isize */
++	F2FS_EXTRA_ATTR_INLINE_XATTR_SIZE,	/* rw, i_inline_xattr_size */
++	F2FS_EXTRA_ATTR_PROJID,			/* ro, i_projid */
++	F2FS_EXTRA_ATTR_INODE_CHKSUM,		/* ro, i_inode_chksum */
++	F2FS_EXTRA_ATTR_CRTIME,			/* ro, i_crtime, i_crtime_nsec */
++	F2FS_EXTRA_ATTR_COMPR_BLOCKS,		/* ro, i_compr_blocks */
++	F2FS_EXTRA_ATTR_COMPR_OPTION,		/* rw, i_compress_algorithm,
++						 *     i_log_cluster_size,
++						 *     i_compress_flag
++						 */
++	F2FS_EXTRA_ATTR_MAX,
++};
++
++struct f2fs_extra_attr {
++	__u8 field;		/* F2FS_EXTRA_ATTR_* */
++	__u8 rsvd1;
++	__u16 attr_size;	/* size of @attr */
++	__u32 rsvd2;
++	__u64 attr;		/* attr value or pointer */
++};
++
++/* F2FS_IOC_DEDUP_CREATE */
++struct f2fs_dedup_src {
++	int inner_fd;
++};
++
++/* F2FS_IOC_DEDUP_FILE */
++struct f2fs_dedup_dst {
++	int base_fd;
++	int tmp_fd;
++};
++
++/* F2FS_IOC_DEDUP_REVOKE */
++struct f2fs_dedup_revoke {
++	int revoke_fd;
++};
++
++/* F2FS_IOC_DEDUP_GET_FILE_INFO */
++struct f2fs_dedup_file_info {
++	short is_deduped;
++	short is_layered;
++	int group;
++};
++
++/* F2FS_IOC_DEDUP_GET_SYS_INFO */
++struct f2fs_dedup_sys_info {
++	__u64 file_count;
++	__u64 file_space;		/* MB */
++};
++
++struct f2fs_clone_info {
++	int src_fd;
++	int flags;	/* meta/data index */
++};
++
++struct f2fs_modify_check_info {
++	int flag;	/* data/meta */
++	int mode;	/* set/get/clear */
++};
++
++#define F2FS_KBYTE_SHIFT	10
++
+ #endif /* _UAPI_LINUX_F2FS_H */
+diff --git a/include/uapi/linux/stat.h b/include/uapi/linux/stat.h
+old mode 100644
+new mode 100755
+index 887a25286441..312843f7f759
+--- a/include/uapi/linux/stat.h
++++ b/include/uapi/linux/stat.h
+@@ -194,6 +194,7 @@ struct statx {
+ #define STATX_ATTR_IMMUTABLE		0x00000010 /* [I] File is marked immutable */
+ #define STATX_ATTR_APPEND		0x00000020 /* [I] File is append-only */
+ #define STATX_ATTR_NODUMP		0x00000040 /* [I] File is not to be dumped */
++#define STATX_ATTR_NOCOMPR		0x00000400 /* [I] File is worthless to compress */
+ #define STATX_ATTR_ENCRYPTED		0x00000800 /* [I] File requires key to decrypt in fs */
+ #define STATX_ATTR_AUTOMOUNT		0x00001000 /* Dir: Automount trigger */
+ #define STATX_ATTR_MOUNT_ROOT		0x00002000 /* Root of a mount */

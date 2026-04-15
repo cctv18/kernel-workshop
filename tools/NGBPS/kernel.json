@@ -1,0 +1,15 @@
+{
+    "version": "6.12.23",
+    "description": "GKI",
+    "name": "android16-5-ga8f88ad96df3-ab13929693-4k",
+    "arch": "arm64",
+    "android_version": "android16",
+    "kernel_version": "6.12",
+    "source": "https://github.com/cctv18/android_gki_kernel_common/archive/refs/heads/android16-6.12-2025-06.zip",
+    "compiler":{
+        "clang": "https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang19-r536225/clang-r536225.zip",
+        "rust": "https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang19-r536225/rust.zip",
+        "build-tools": "https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang19-r536225/build-tools.zip"
+    },
+    "anykernel3":"https://github.com/cctv18/AnyKernel3/archive/refs/heads/master.zip"
+}

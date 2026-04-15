@@ -1,0 +1,7 @@
+{
+   "name": "bbr",
+   "description": "bbr for 6.12",
+   "versions": ["6","5"],
+   "dependency": [],
+   "type": "manual"
+}

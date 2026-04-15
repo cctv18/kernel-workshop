@@ -1,0 +1,6 @@
+{
+    "name": "lz4kd_6.12",
+    "description": "LZ4KD patch for 6.12",
+    "versions": ["6.12"],
+    "dependency": []
+}

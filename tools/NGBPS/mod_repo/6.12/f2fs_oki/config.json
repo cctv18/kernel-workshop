@@ -1,0 +1,6 @@
+{
+   "name": "f2fs_6.12",
+   "description": "F2FS patch for 6.12",
+   "versions": ["6.12"],
+   "dependency": []
+}
