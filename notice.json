@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "label": "📢 公告 (26.03.24)",
-  "message": "注意：近期由于sukisu上游长期无人维护，无法正常编译，请使用resukisu编译内核！",
+  "label": "📢 公告 (26.04.22)",
+  "message": "重大更新：当前脚本仓库已引入ccache-ECS缓存技术，大幅优化编译速度，为正常使用相关功能，请及时同步仓库！",
   "color": "orange",
   "labelColor": "black",
   "style": "for-the-badge"
