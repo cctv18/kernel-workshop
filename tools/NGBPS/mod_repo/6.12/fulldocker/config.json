@@ -1,0 +1,6 @@
+{
+   "name": "fulldocker_6.12",
+   "description": "FullDocker patch for 6.12",
+   "versions": ["6.12"],
+   "dependency": []
+}
