@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "label": "📢 公告 (26.05.09)",
-  "message": "重大更新：当前脚本仓库已引入 Droidspaces 容器支持，为正常使用相关功能，请及时同步仓库！",
+  "label": "📢 公告 (26.05.22)",
+  "message": "由于上游长期疏于维护，现已全面停止sukisu支持（使用resukisu源码替代），sukisu用户请及时迁移至resukisu管理器！",
   "color": "orange",
   "labelColor": "black",
   "style": "for-the-badge"
