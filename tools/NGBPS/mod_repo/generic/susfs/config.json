@@ -1,0 +1,7 @@
+{
+   "name": "susfs",
+   "description": "susfs",
+   "versions": ["6","5"],
+   "dependency": ["kernelsu"],
+   "type": "manual"
+}

@@ -1,204 +1,300 @@
-
-CONFIG_CMDLINE="console=ttynull stack_depot_disable=on cgroup_disable=pressure kasan.stacktrace=off kvm-arm.mode=protected bootconfig cgroup_no_v1=cpu,cpuset,io,memory"
-
-# 很疯狂
-CONFIG_PID_NS=y
-CONFIG_SYSVIPC=y
-CONFIG_DEVTMPFS=y
-CONFIG_POSIX_MQUEUE=y
-CONFIG_USER_NS=y
-CONFIG_BRIDGE_NETFILTER=y
-CONFIG_NF_TABLES=y
-
-CONFIG_NF_TABLES_INET=y
-CONFIG_NF_TABLES_NETDEV=y
-CONFIG_NFT_NUMGEN=y
-CONFIG_NFT_CT=y
-CONFIG_NFT_CONNLIMIT=y
-CONFIG_NFT_LIMIT=y
-CONFIG_NFT_MASQ=y
-CONFIG_NFT_REDIR=y
-CONFIG_NFT_TUNNEL=y
-CONFIG_NFT_QUEUE=y
-CONFIG_NFT_QUOTA=y
-CONFIG_NFT_REJECT=y
-CONFIG_NFT_COMPAT=y
-CONFIG_NFT_HASH=y
-CONFIG_NFT_XFRM=y
-CONFIG_NFT_SOCKET=y
-CONFIG_NFT_OSF=y
-CONFIG_NFT_TPROXY=y
-CONFIG_NFT_SYNPROXY=y
-#CONFIG_NF_FLOW_TABLE=y
-CONFIG_NF_TABLES_IPV4=y
-CONFIG_NF_TABLES_ARP=y
-CONFIG_NF_TABLES_IPV6=y
-CONFIG_NF_TABLES_BRIDGE=y
-CONFIG_NFT_BRIDGE_REJECT=y
-CONFIG_NFT_NAT=y
-CONFIG_NFT_FIB=y
-CONFIG_NFT_FIB_IPV4=y
-CONFIG_NFT_FIB_IPV6=y
-CONFIG_VXLAN=y
-CONFIG_BRIDGE_VLAN_FILTERING=y
-CONFIG_IP_NF_MATCH_AH=y
-CONFIG_IP_NF_TARGET_SYNPROXY=y
-CONFIG_IP_NF_TARGET_ECN=y
-CONFIG_IP_NF_TARGET_TTL=y
-CONFIG_NETFILTER_XT_MATCH_RECENT=y
-CONFIG_BLK_DEV_THROTTLING=y
-CONFIG_BTRFS_FS=y
-CONFIG_BTRFS_FS_POSIX_ACL=y
-CONFIG_IP_VS=y
-CONFIG_IP_SCTP=y
-CONFIG_NETFILTER_XT_MATCH_IPVS=y
-CONFIG_IP_VS_IPV6=y
-CONFIG_IP_VS_PROTO_TCP=y
-CONFIG_IP_VS_PROTO_UDP=y
-CONFIG_IP_VS_PROTO_SCTP=y
-CONFIG_IP_VS_PROTO_ESP=y
-CONFIG_IP_VS_PROTO_AH=y
-CONFIG_IP_VS_RR=y
-CONFIG_IP_VS_WRR=y
-CONFIG_IP_VS_LC=y
-CONFIG_IP_VS_WLC=y
-CONFIG_IP_VS_FO=y
-CONFIG_IP_VS_OVF=y
-CONFIG_IP_VS_LBLC=y
-CONFIG_IP_VS_LBLCR=y
-CONFIG_IP_VS_DH=y
-CONFIG_IP_VS_SH=y
-CONFIG_IP_VS_SED=y
-CONFIG_IP_VS_NQ=y
-CONFIG_IP_VS_TWOS=y
-CONFIG_IP_VS_MH=y
-CONFIG_IP_VS_NFCT=y
-
-#这三个选项不能移除，因为ABI hack造成了强制依赖
+#必需项 ABI hack造成了强制依赖,关闭炸abi
 CONFIG_CGROUP_MISC=y
 CONFIG_CGROUP_PIDS=y
 CONFIG_CGROUP_DEVICE=y
 CONFIG_CGROUP_PERF=y
 
-CONFIG_NET_SCH_HFSC=y
-CONFIG_NET_SCH_RED=y
-CONFIG_NET_SCH_SFB=y
-CONFIG_NET_SCH_TEQL=y
-CONFIG_NET_SCH_CBS=y
-CONFIG_NET_SCH_ETF=y
-CONFIG_NET_SCH_TAPRIO=y
-CONFIG_NET_SCH_GRED=y
-CONFIG_NET_SCH_DRR=y
-CONFIG_NET_SCH_MQPRIO=y
-CONFIG_NET_SCH_SKBPRIO=y
-CONFIG_NET_SCH_CHOKE=y
-CONFIG_NET_SCH_QFQ=y
-CONFIG_NET_SCH_CAKE=y
-CONFIG_NET_SCH_HHF=y
-CONFIG_NET_SCH_PIE=y
-CONFIG_NET_SCH_PLUG=y
-CONFIG_NET_SCH_ETS=y
-CONFIG_NET_SCH_DEFAULT=y
-CONFIG_NET_SCH_FQ_PIE=y
-CONFIG_ZRAM_BACKEND_ZSTD=y
-CONFIG_ZRAM_BACKEND_DEFLATE=y
-CONFIG_NFT_LOG=y
-CONFIG_NFT_FIB_INET=y
-CONFIG_NF_DUP_NETDEV=y
-CONFIG_NFT_DUP_NETDEV=y
-CONFIG_NFT_FWD_NETDEV=y
-CONFIG_NFT_FIB_NETDEV=y
-CONFIG_NFT_REJECT_NETDEV=y
-CONFIG_NETFILTER_XTABLES_COMPAT=y
-CONFIG_NETFILTER_XT_TARGET_AUDIT=y
-CONFIG_NETFILTER_XT_TARGET_CHECKSUM=y
-CONFIG_NETFILTER_XT_TARGET_HMARK=y
-CONFIG_NETFILTER_XT_TARGET_LED=y
-CONFIG_NETFILTER_XT_TARGET_RATEEST=y
-CONFIG_NETFILTER_XT_TARGET_TCPOPTSTRIP=y
-CONFIG_IP_VS_FTP=y
-CONFIG_NETFILTER_NETLINK_HOOK=y
-CONFIG_NETFILTER_NETLINK_ACCT=y
-CONFIG_NF_CONNTRACK_ZONES=y
-CONFIG_NF_CONNTRACK_SNMP=y
-CONFIG_NF_CONNTRACK_SIP=y
-CONFIG_NETFILTER_NETLINK_GLUE_CT=y
-CONFIG_NFT_DUP_IPV4=y
-CONFIG_NF_LOG_ARP=y
-CONFIG_NF_LOG_IPV4=y
-CONFIG_IP_VS_PE_SIP=y
-CONFIG_NFT_DUP_IPV6=y
-CONFIG_IP6_NF_MATCH_AH=y
-CONFIG_IP6_NF_MATCH_EUI64=y
-CONFIG_IP6_NF_MATCH_FRAG=y
-CONFIG_IP6_NF_MATCH_OPTS=y
-CONFIG_IP6_NF_MATCH_HL=y
-CONFIG_IP6_NF_MATCH_IPV6HEADER=y
-CONFIG_IP6_NF_MATCH_MH=y
-CONFIG_IP6_NF_MATCH_RT=y
-CONFIG_IP6_NF_MATCH_SRH=y
-CONFIG_IP6_NF_TARGET_HL=y
-CONFIG_IP6_NF_TARGET_SYNPROXY=y
-CONFIG_IP6_NF_SECURITY=y
-CONFIG_IP6_NF_TARGET_NPT=y
-CONFIG_L2TP_V3=y
-CONFIG_NFT_BRIDGE_META=y
-CONFIG_NF_CONNTRACK_BRIDGE=y
-CONFIG_BRIDGE_NF_EBTABLES=y
-CONFIG_IP_DCCP=y
-CONFIG_IP_DCCP_CCID3=y
-CONFIG_IP_DCCP_TFRC_LIB=y
-CONFIG_BRIDGE_EBT_BROUTE=y
-CONFIG_BRIDGE_EBT_T_FILTER=y
-CONFIG_BRIDGE_EBT_T_NAT=y
-CONFIG_BRIDGE_EBT_802_3=y
-CONFIG_BRIDGE_EBT_AMONG=y
-CONFIG_BRIDGE_EBT_ARP=y
-CONFIG_BRIDGE_EBT_IP=y
-CONFIG_BRIDGE_EBT_IP6=y
-CONFIG_BRIDGE_EBT_LIMIT=y
-CONFIG_BRIDGE_EBT_MARK=y
-CONFIG_BRIDGE_EBT_PKTTYPE=y
-CONFIG_BRIDGE_EBT_STP=y
-CONFIG_BRIDGE_EBT_VLAN=y
-CONFIG_BRIDGE_EBT_ARPREPLY=y
-CONFIG_BRIDGE_EBT_DNAT=y
-CONFIG_BRIDGE_EBT_MARK_T=y
-CONFIG_BRIDGE_EBT_REDIRECT=y
-CONFIG_BRIDGE_EBT_SNAT=y
-CONFIG_BRIDGE_EBT_LOG=y
-CONFIG_BRIDGE_EBT_NFLOG=y
-CONFIG_L2TP_IP=y
-CONFIG_L2TP_ETH=y
+#内核参数 DOCKER支持，关闭v1控制器
+CONFIG_CMDLINE="console=ttynull stack_depot_disable=on cgroup_disable=pressure kasan.stacktrace=off kvm-arm.mode=protected bootconfig cgroup_no_v1=cpu,cpuset,io,memory"
+#DROIDSPACES 支持
+CONFIG_PID_NS=y
+CONFIG_SYSVIPC=y
+CONFIG_DEVTMPFS=y
+CONFIG_POSIX_MQUEUE=y
 
-CONFIG_NETFILTER_XT_MATCH_CGROUP=y
-CONFIG_NETFILTER_XT_MATCH_CLUSTER=y
-#CONFIG_NETFILTER_XT_MATCH_CONNLABEL 这玩意会炸
-CONFIG_NF_CONNTRACK_ZONES=y
-CONFIG_NETFILTER_XT_MATCH_CPU=y
-CONFIG_NETFILTER_XT_MATCH_DEVGROUP=y
-CONFIG_NETFILTER_XT_MATCH_IPCOMP=y
-CONFIG_NETFILTER_XT_MATCH_NFACCT=y
-CONFIG_NETFILTER_XT_MATCH_OSF=y
-CONFIG_NETFILTER_XT_MATCH_PHYSDEV=y
-CONFIG_NETFILTER_XT_MATCH_RATEEST=y
-CONFIG_NETFILTER_XT_MATCH_REALM=y
-CONFIG_NETFILTER_XT_MATCH_TCPMSS=y
-CONFIG_CEPH_FS=y
-CONFIG_CEPH_FS_POSIX_ACL=y
-CONFIG_CEPH_FS_SECURITY_LABEL=y
-CONFIG_CEPH_FSCACHE=y
-CONFIG_CEPH_LIB=y
-CONFIG_CEPH_LIB_USE_DNS_RESOLVER=y
-CONFIG_NF_CT_NETLINK_HELPER=y
-CONFIG_FHANDLE=y
-CONFIG_UNIX_DIAG=y
-CONFIG_PACKET_DIAG=y
-CONFIG_NETLINK_DIAG=y
-CONFIG_CHECKPOINT_RESTORE=y
-CONFIG_MACVLAN=y
-CONFIG_MACVTAP=y
-CONFIG_IPVLAN=y
-CONFIG_IPVTAP=y
-CONFIG_L2TP=y
+#如果要在droidspaces跑docker开这个
+CONFIG_USER_NS=y
 
+#用于更多容器应用支持 按需取用
+### 网络过滤与 nftables 框架
+CONFIG_BRIDGE_NETFILTER=y                 # 桥接网络包经过 netfilter 框架
+CONFIG_NF_TABLES=y                        # nftables 框架（替代 iptables）
+CONFIG_NF_TABLES_INET=y                   # nftables 支持 inet 表（同时处理 IPv4/IPv6）
+CONFIG_NF_TABLES_NETDEV=y                 # nftables 支持 netdev 表（入口点流量控制）
+CONFIG_NFT_NUMGEN=y                       # nftables 数值生成器
+CONFIG_NFT_CT=y                           # nftables 连接跟踪匹配
+CONFIG_NFT_CONNLIMIT=y                    # nftables 连接数限制
+CONFIG_NFT_LIMIT=y                        # nftables 速率限制
+CONFIG_NFT_MASQ=y                         # nftables 伪装（MASQUERADE）
+CONFIG_NFT_REDIR=y                        # nftables 重定向
+CONFIG_NFT_TUNNEL=y                       # nftables 隧道匹配
+CONFIG_NFT_QUEUE=y                        # nftables 队列（送往用户态）
+CONFIG_NFT_QUOTA=y                        # nftables 配额
+CONFIG_NFT_REJECT=y                       # nftables 拒绝（REJECT）
+CONFIG_NFT_COMPAT=y                       # nftables 兼容 iptables 表达式
+CONFIG_NFT_HASH=y                         # nftables 哈希表
+CONFIG_NFT_XFRM=y                         # nftables IPsec 策略匹配
+CONFIG_NFT_SOCKET=y                       # nftables socket 匹配（如透明代理）
+CONFIG_NFT_OSF=y                          # nftables 操作系统指纹匹配
+CONFIG_NFT_TPROXY=y                       # nftables 透明代理
+CONFIG_NFT_SYNPROXY=y                     # nftables SYN 代理（防 SYN flood）
+CONFIG_NF_TABLES_IPV4=y                   # nftables IPv4 支持
+CONFIG_NF_TABLES_ARP=y                    # nftables ARP 支持
+CONFIG_NF_TABLES_IPV6=y                   # nftables IPv6 支持
+CONFIG_NF_TABLES_BRIDGE=y                 # nftables 桥接支持
+CONFIG_NFT_BRIDGE_REJECT=y                # nftables 桥接层 REJECT
+CONFIG_NFT_NAT=y                          # nftables NAT 支持
+CONFIG_NFT_FIB=y                          # nftables FIB（路由查找）
+CONFIG_NFT_FIB_IPV4=y                     # nftables IPv4 FIB
+CONFIG_NFT_FIB_IPV6=y                     # nftables IPv6 FIB
+CONFIG_NFT_LOG=y                          # nftables 日志记录
+CONFIG_NFT_FIB_INET=y                     # nftables inet 表 FIB
+CONFIG_NF_DUP_NETDEV=y                    # 包复制（netdev 层）
+CONFIG_NFT_DUP_NETDEV=y                   # nftables netdev 包复制
+CONFIG_NFT_FWD_NETDEV=y                   # nftables netdev 转发
+CONFIG_NFT_FIB_NETDEV=y                   # nftables netdev FIB 查找
+CONFIG_NFT_REJECT_NETDEV=y                # nftables netdev 拒绝
+CONFIG_NFT_DUP_IPV4=y                     # nftables IPv4 包复制
+CONFIG_NFT_DUP_IPV6=y                     # nftables IPv6 包复制
+
+### 旧式 xtables / iptables 兼容与扩展
+CONFIG_NETFILTER_XTABLES_COMPAT=y         # xtables 兼容旧版用户空间工具
+CONFIG_IP_NF_MATCH_AH=y                   # IPv4 AH 扩展头匹配
+CONFIG_IP_NF_TARGET_SYNPROXY=y            # IPv4 SYNPROXY 目标
+CONFIG_IP_NF_TARGET_ECN=y                 # IPv4 ECN 修改
+CONFIG_IP_NF_TARGET_TTL=y                 # IPv4 TTL 修改
+CONFIG_NETFILTER_XT_MATCH_RECENT=y        # recent 匹配（动态列表）
+CONFIG_NETFILTER_XT_TARGET_AUDIT=y        # audit 目标（审计日志）
+CONFIG_NETFILTER_XT_TARGET_CHECKSUM=y     # checksum 目标（重新计算校验和）
+CONFIG_NETFILTER_XT_TARGET_HMARK=y        # HMARK 目标（基于哈希选择路径）
+CONFIG_NETFILTER_XT_TARGET_LED=y          # LED 触发（根据包匹配闪烁）
+CONFIG_NETFILTER_XT_TARGET_RATEEST=y      # rateest 目标（速率估计）
+CONFIG_NETFILTER_XT_TARGET_TCPOPTSTRIP=y  # TCP 选项剥离
+CONFIG_NETFILTER_XT_MATCH_CGROUP=y        # cgroup 匹配
+CONFIG_NETFILTER_XT_MATCH_CLUSTER=y       # 集群匹配
+CONFIG_NETFILTER_XT_MATCH_CPU=y           # CPU ID 匹配
+CONFIG_NETFILTER_XT_MATCH_DEVGROUP=y      # 设备组匹配
+CONFIG_NETFILTER_XT_MATCH_IPCOMP=y        # IPComp 协议匹配
+CONFIG_NETFILTER_XT_MATCH_NFACCT=y        # nfacct 记账匹配
+CONFIG_NETFILTER_XT_MATCH_OSF=y           # OS 指纹匹配
+CONFIG_NETFILTER_XT_MATCH_PHYSDEV=y       # 物理设备匹配（桥接场景）
+CONFIG_NETFILTER_XT_MATCH_RATEEST=y       # 速率估计匹配
+CONFIG_NETFILTER_XT_MATCH_REALM=y         # 路由领域匹配
+CONFIG_NETFILTER_XT_MATCH_TCPMSS=y        # TCP MSS 调整
+
+### 连接跟踪（Conntrack）与辅助模块
+CONFIG_NF_CONNTRACK_ZONES=y               # 连接跟踪区域（用于隔离 CT）
+CONFIG_NF_CONNTRACK_SNMP=y                # SNMP 连接跟踪辅助
+CONFIG_NF_CONNTRACK_SIP=y                 # SIP 协议连接跟踪辅助
+CONFIG_NF_CONNTRACK_BRIDGE=y              # 桥接层连接跟踪
+CONFIG_NETFILTER_NETLINK_HOOK=y           # netfilter hook 的 netlink 接口
+CONFIG_NETFILTER_NETLINK_ACCT=y           # 连接跟踪记账 netlink 接口
+CONFIG_NETFILTER_NETLINK_GLUE_CT=y        # netlink 胶合层（用于 conntrack）
+CONFIG_NF_CT_NETLINK_HELPER=y             # 用户态连接跟踪帮助程序
+
+### IPv6 扩展匹配与目标
+CONFIG_IP6_NF_MATCH_AH=y                  # IPv6 AH 头匹配
+CONFIG_IP6_NF_MATCH_EUI64=y               # IPv6 EUI-64 地址匹配
+CONFIG_IP6_NF_MATCH_FRAG=y                # IPv6 分片头匹配
+CONFIG_IP6_NF_MATCH_OPTS=y                # IPv6 选项头匹配
+CONFIG_IP6_NF_MATCH_HL=y                  # IPv6 跳限制匹配
+CONFIG_IP6_NF_MATCH_IPV6HEADER=y          # IPv6 扩展头存在性匹配
+CONFIG_IP6_NF_MATCH_MH=y                  # IPv6 移动头匹配
+CONFIG_IP6_NF_MATCH_RT=y                  # IPv6 路由头匹配
+CONFIG_IP6_NF_MATCH_SRH=y                 # IPv6 段路由头匹配
+CONFIG_IP6_NF_TARGET_HL=y                 # IPv6 跳限制修改
+CONFIG_IP6_NF_TARGET_SYNPROXY=y           # IPv6 SYNPROXY
+CONFIG_IP6_NF_SECURITY=y                  # IPv6 SELinux 安全标记
+CONFIG_IP6_NF_TARGET_NPT=y                # IPv6 NPTv6 前缀转换
+
+### IPVS（Linux 虚拟服务器）
+CONFIG_IP_VS=y                            # IPVS 核心
+CONFIG_NETFILTER_XT_MATCH_IPVS=y          # iptables IPVS 匹配
+CONFIG_IP_VS_IPV6=y                       # IPv6 支持
+CONFIG_IP_VS_PROTO_TCP=y                  # TCP 负载均衡
+CONFIG_IP_VS_PROTO_UDP=y                  # UDP 负载均衡
+CONFIG_IP_VS_PROTO_SCTP=y                 # SCTP 负载均衡
+CONFIG_IP_VS_PROTO_ESP=y                  # ESP 负载均衡
+CONFIG_IP_VS_PROTO_AH=y                   # AH 负载均衡
+CONFIG_IP_VS_RR=y                         # 轮询调度算法
+CONFIG_IP_VS_WRR=y                        # 加权轮询
+CONFIG_IP_VS_LC=y                         # 最小连接
+CONFIG_IP_VS_WLC=y                        # 加权最小连接
+CONFIG_IP_VS_FO=y                         # 故障转移
+CONFIG_IP_VS_OVF=y                        # 溢出调度
+CONFIG_IP_VS_LBLC=y                       # 基于局部性的最小连接
+CONFIG_IP_VS_LBLCR=y                      # 带复制的基于局部性最小连接
+CONFIG_IP_VS_DH=y                         # 目标哈希
+CONFIG_IP_VS_SH=y                         # 源哈希
+CONFIG_IP_VS_SED=y                        # 最短期望延迟
+CONFIG_IP_VS_NQ=y                         # 永不排队
+CONFIG_IP_VS_TWOS=y                       # 双调度（Two-Scheduler）
+CONFIG_IP_VS_MH=y                         # Maglev 哈希
+CONFIG_IP_VS_NFCT=y                       # 与连接跟踪集成
+CONFIG_IP_VS_FTP=y                        # FTP 辅助协议支持
+CONFIG_IP_VS_PE_SIP=y                     # SIP 持久性引擎
+
+### 队列调度（QoS / TC）
+CONFIG_NET_SCH_HFSC=y                     # HFSC 队列（层次化公平服务曲线）
+CONFIG_NET_SCH_RED=y                      # RED（随机早期检测）
+CONFIG_NET_SCH_SFB=y                      # SFB（随机公平蓝）
+CONFIG_NET_SCH_TEQL=y                     # TEQL（负载均衡）
+CONFIG_NET_SCH_CBS=y                      # CBS（基于信用的整形，用于 AVB）
+CONFIG_NET_SCH_ETF=y                      # ETF（最早发送时间优先）
+CONFIG_NET_SCH_TAPRIO=y                   # TAPRIO（时间感知优先级）
+CONFIG_NET_SCH_GRED=y                     # GRED（泛化 RED）
+CONFIG_NET_SCH_DRR=y                      # DRR（亏空轮询）
+CONFIG_NET_SCH_MQPRIO=y                   # MQPRIO（多队列优先级）
+CONFIG_NET_SCH_SKBPRIO=y                  # SKBPRIO（按 skb 优先级排队）
+CONFIG_NET_SCH_CHOKE=y                    # CHOKe（惩罚高带宽流）
+CONFIG_NET_SCH_QFQ=y                      # QFQ（快速公平队列）
+CONFIG_NET_SCH_CAKE=y                     # CAKE（通用 AQM，对抗 bufferbloat）
+CONFIG_NET_SCH_HHF=y                      # HHF（防止缓存膨胀）
+CONFIG_NET_SCH_PIE=y                      # PIE（比例积分控制器增强）
+CONFIG_NET_SCH_PLUG=y                     # PLUG（暂停/恢复排队）
+CONFIG_NET_SCH_ETS=y                      # ETS（增强传输选择，802.1Qaz）
+CONFIG_NET_SCH_DEFAULT=y                  # 默认排队规则（通常为 pfifo_fast）
+CONFIG_NET_SCH_FQ_PIE=y                   # FQ-PIE（公平队列+PIE）
+
+### 桥接与 VLAN
+CONFIG_BRIDGE_VLAN_FILTERING=y            # 桥接 VLAN 过滤
+CONFIG_NFT_BRIDGE_META=y                  # nftables 桥接元数据匹配
+CONFIG_BRIDGE_NF_EBTABLES=y               # 网桥层 ebtables 支持
+CONFIG_BRIDGE_EBT_BROUTE=y                # ebtables BROUTE 链
+CONFIG_BRIDGE_EBT_T_FILTER=y              # ebtables filter 表
+CONFIG_BRIDGE_EBT_T_NAT=y                 # ebtables nat 表
+CONFIG_BRIDGE_EBT_802_3=y                 # 802.3 帧类型匹配
+CONFIG_BRIDGE_EBT_AMONG=y                 # 地址范围匹配
+CONFIG_BRIDGE_EBT_ARP=y                   # ARP 匹配
+CONFIG_BRIDGE_EBT_IP=y                    # IPv4 匹配
+CONFIG_BRIDGE_EBT_IP6=y                   # IPv6 匹配
+CONFIG_BRIDGE_EBT_LIMIT=y                 # 速率限制匹配
+CONFIG_BRIDGE_EBT_MARK=y                  # 标记匹配
+CONFIG_BRIDGE_EBT_PKTTYPE=y               # 包类型匹配（广播/组播/单播）
+CONFIG_BRIDGE_EBT_STP=y                   # STP 匹配
+CONFIG_BRIDGE_EBT_VLAN=y                  # VLAN 匹配
+CONFIG_BRIDGE_EBT_ARPREPLY=y              # ARP 应答目标
+CONFIG_BRIDGE_EBT_DNAT=y                  # 目标 DNAT
+CONFIG_BRIDGE_EBT_MARK_T=y                # 目标 MARK
+CONFIG_BRIDGE_EBT_REDIRECT=y              # 目标 REDIRECT
+CONFIG_BRIDGE_EBT_SNAT=y                  # 目标 SNAT
+CONFIG_BRIDGE_EBT_LOG=y                   # 日志记录目标
+CONFIG_BRIDGE_EBT_NFLOG=y                 # nflog 目标（送往 ulogd）
+
+### 隧道与虚拟网络接口
+CONFIG_VXLAN=y                            # VXLAN 隧道支持
+CONFIG_L2TP_V3=y                          # L2TPv3 支持
+CONFIG_L2TP_IP=y                          # L2TP over IP
+CONFIG_L2TP_ETH=y                         # L2TP 以太网伪线
+CONFIG_MACVLAN=y                          # MACVLAN 驱动
+CONFIG_MACVTAP=y                          # MACVTAP（用于虚拟机）
+CONFIG_IPVLAN=y                           # IPVLAN 驱动
+CONFIG_IPVTAP=y                           # IPVTAP
+CONFIG_L2TP=y                             # L2TP 核心模块
+CONFIG_NET_FOU=y                          # Foo-over-UDP 隧道封装
+CONFIG_NET_FOU_IP_TUNNELS=y               # FOU 用于 IPIP/GRE 等隧道
+CONFIG_NET_IPGRE_BROADCAST=y              # GRE 隧道广播支持
+CONFIG_MPLS=y                             # 多协议标签交换（MPLS）
+CONFIG_MPLS_ROUTING=y                     # MPLS 路由基础
+CONFIG_NET_MPLS_GSO=y                     # MPLS 的 GSO 分段卸载
+CONFIG_MPLS_IPTUNNEL=y                    # MPLS over IP 隧道
+CONFIG_NET_NSH=y                          # 网络服务头（NSH）协议
+CONFIG_HSR=y                              # 高可用无缝冗余协议（IEC 62439-3）
+CONFIG_IPV6_SEG6_LWTUNNEL=y               # IPv6 Segment Routing（SRv6）轻量隧道
+CONFIG_IPV6_RPL_LWTUNNEL=y                # IPv6 RPL 路由协议轻量隧道
+CONFIG_IPV6_IOAM6_LWTUNNEL=y              # IPv6 IOAM 轻量隧道
+CONFIG_IPV6_ILA=y                         # IPv6 标识符定位符寻址（ILA）
+
+### TCP 拥塞控制算法
+CONFIG_TCP_CONG_HSTCP=y                   # HighSpeed TCP（高速 TCP）
+CONFIG_TCP_CONG_HYBLA=y                   # TCP-Hybla（改善高延迟链路）
+CONFIG_TCP_CONG_SCALABLE=y                # Scalable TCP
+CONFIG_TCP_CONG_LP=y                      # TCP-LP（低优先级拥塞控制）
+CONFIG_TCP_CONG_VENO=y                    # TCP-Veno（针对无线网络优化）
+CONFIG_TCP_CONG_YEAH=y                    # YeAH TCP
+CONFIG_TCP_CONG_ILLINOIS=y                # Illinois TCP
+CONFIG_TCP_CONG_DCTCP=y                   # 数据中心 TCP（DCTCP）
+CONFIG_TCP_CONG_CDG=y                     # CAIA Delay-Gradient（CDG）
+
+### IPsec / XFRM
+CONFIG_XFRM_SUB_POLICY=y                  # XFRM 子策略支持
+CONFIG_NET_KEY_MIGRATE=y                  # PF_KEY 迁移支持（用于 IKE 协商迁移）
+CONFIG_INET_AH=y                          # IPv4 AH（认证头）协议
+CONFIG_INET_IPCOMP=y                      # IPv4 IPcomp 载荷压缩
+CONFIG_INET_ESPINTCP=y                    # IPv4 ESP over TCP（用于穿透 NAT）
+CONFIG_INET6_AH=y                         # IPv6 AH 协议
+CONFIG_INET6_ESPINTCP=y                   # IPv6 ESP over TCP
+
+### 组播路由
+CONFIG_IP_MROUTE=y                        # IPv4 组播路由
+CONFIG_IP_MROUTE_MULTIPLE_TABLES=y        # 多路由表组播支持
+CONFIG_IP_PIMSM_V1=y                      # PIM-SM v1 组播路由协议
+CONFIG_IP_PIMSM_V2=y                      # PIM-SM v2 组播路由协议
+CONFIG_IPV6_PIMSM_V2=y                    # IPv6 PIM-SMv2 组播路由
+
+### 流分类与动作（tc action/classifier）
+CONFIG_NET_CLS_ROUTE4=y                   # 基于 IPv4 路由的包分类
+CONFIG_CLS_U32_PERF=y                     # u32 分类器性能计数器
+CONFIG_NET_CLS_FLOWER=y                   # Flower 分类器（基于流特征）
+CONFIG_NET_EMATCH_CANID=y                 # CAN 标识符匹配（用于 CAN 网络）
+CONFIG_NET_EMATCH_IPSET=y                 # ipset 扩展匹配
+CONFIG_NET_EMATCH_IPT=y                   # iptables 扩展匹配
+CONFIG_NET_ACT_SAMPLE=y                   # 采样动作（结合 psample）
+CONFIG_NET_ACT_NAT=y                      # NAT 动作
+CONFIG_NET_ACT_PEDIT=y                    # 包编辑（修改报文字段）
+CONFIG_NET_ACT_SIMP=y                     # 简单动作（如 accept/drop）
+CONFIG_NET_ACT_CSUM=y                     # 校验和更新动作
+CONFIG_NET_ACT_MPLS=y                     # MPLS 标签操作动作
+CONFIG_NET_ACT_VLAN=y                     # VLAN 操作动作
+CONFIG_NET_ACT_CONNMARK=y                 # 连接标记动作
+CONFIG_NET_ACT_CTINFO=y                   # 连接跟踪信息动作
+CONFIG_NET_ACT_SKBMOD=y                   # skb 修改动作
+CONFIG_NET_ACT_IFE=y                      # IFE（接口转发封装）动作
+CONFIG_NET_ACT_TUNNEL_KEY=y               # 隧道键设置动作
+CONFIG_NET_ACT_GATE=y                     # 门控动作（时间感知）
+CONFIG_NET_IFE_SKBMARK=y                  # IFE 封装携带 skb 标记
+CONFIG_NET_IFE_SKBPRIO=y                  # IFE 封装携带优先级
+CONFIG_NET_IFE_SKBTCINDEX=y               # IFE 封装携带 tc 索引
+
+### 其他网络协议与诊断
+CONFIG_RDS=y                              # 可靠数据报套接字（RDS）
+CONFIG_RDS_TCP=y                          # RDS over TCP 传输
+CONFIG_XDP_SOCKETS_DIAG=y                 # AF_XDP 套接字诊断
+CONFIG_INET_RAW_DIAG=y                    # IPv4 原始套接字诊断
+CONFIG_UNIX_DIAG=y                        # UNIX 域套接字诊断
+CONFIG_PACKET_DIAG=y                      # packet 套接字诊断
+CONFIG_NETLINK_DIAG=y                     # netlink 套接字诊断
+CONFIG_IP_FIB_TRIE_STATS=y                # IPv4 FIB trie 统计信息
+CONFIG_IP_ROUTE_MULTIPATH=y               # IPv4 多路径路由
+CONFIG_NF_LOG_ARP=y                       # ARP 包日志
+CONFIG_NF_LOG_IPV4=y                      # IPv4 包日志
+CONFIG_IPV6_SUBTREES=y                    # IPv6 子树（用于策略路由）
+
+### 文件系统
+CONFIG_BTRFS_FS=y                         # Btrfs 文件系统
+CONFIG_BTRFS_FS_POSIX_ACL=y               # Btrfs POSIX ACL 支持
+CONFIG_CEPH_FS=y                          # Ceph 文件系统客户端
+CONFIG_CEPH_FS_POSIX_ACL=y                # Ceph POSIX ACL
+CONFIG_CEPH_FS_SECURITY_LABEL=y           # Ceph 安全标签（SELinux）
+CONFIG_CEPH_FSCACHE=y                     # Ceph 本地缓存
+CONFIG_CEPH_LIB=y                         # Ceph 核心库
+CONFIG_CEPH_LIB_USE_DNS_RESOLVER=y        # Ceph 使用 DNS 解析监视器地址
+
+### 块设备与 I/O
+CONFIG_BLK_DEV_THROTTLING=y               # 块设备 I/O 节流
+CONFIG_ZRAM_BACKEND_ZSTD=y                # zram 压缩后端 Zstd
+CONFIG_ZRAM_BACKEND_DEFLATE=y             # zram 压缩后端 Deflate
+CONFIG_BLK_CGROUP_IOLATENCY=y             # blk-cgroup IO 延迟控制
+
+### 传输协议扩展
+CONFIG_IP_SCTP=y                          # SCTP 协议支持
+CONFIG_IP_DCCP=y                          # DCCP 协议支持
+CONFIG_IP_DCCP_CCID3=y                    # DCCP CCID-3 拥塞控制
+CONFIG_IP_DCCP_TFRC_LIB=y                 # DCCP TFRC 库
+
+### 系统功能与检查点
+CONFIG_FHANDLE=y                          # 文件句柄支持（用于 checkpoint/restore）
+CONFIG_CHECKPOINT_RESTORE=y               # CRIU 检查点/恢复支持
+
+### 虚拟交换机
+CONFIG_OPENVSWITCH=y                      # Open vSwitch 内核模块

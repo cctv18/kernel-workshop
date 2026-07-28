@@ -1,0 +1,6 @@
+{
+    "name": "zram_6.12",
+    "description": "ZRAM patch for 6.12",
+    "versions": ["6.12"],
+    "dependency": []
+}
