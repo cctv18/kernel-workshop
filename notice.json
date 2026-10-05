@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "label": "📢 公告 (26.05.22)",
-  "message": "由于上游长期疏于维护，现已全面停止sukisu支持（使用resukisu源码替代），sukisu用户请及时迁移至resukisu管理器！",
+  "label": "📢 公告 (26.10.05)",
+  "message": "目前ReSukiSU已改名为BakaSU，构建脚本已同步更新，请大家及时同步仓库，否则旧脚本将无法正常构建内核！",
   "color": "orange",
   "labelColor": "black",
   "style": "for-the-badge"
